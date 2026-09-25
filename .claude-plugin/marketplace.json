@@ -1,0 +1,19 @@
+{
+  "name": "promotion-master",
+  "owner": {
+    "name": "Raymond"
+  },
+  "metadata": {
+    "description": "Promotion Master 产品研究与推广技能集",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "promotion-master",
+      "source": ".",
+      "description": "自包含的 promotion-master 主入口，以及定位、核查、问答和Word排版四项专项技能。",
+      "version": "1.0.0",
+      "category": "productivity"
+    }
+  ]
+}

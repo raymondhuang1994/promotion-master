@@ -1,0 +1,4 @@
+interface:
+  display_name: "材料核查"
+  short_description: "抽取 PPT 图表底层数据，逐只加总对饼图，独立复算集中度与费用，列出口径矛盾与慎用词，出核查备忘"
+  default_prompt: "用 $material-factcheck 核对这份路演材料的数字与口径，列出对外使用前需要复核的事项。"

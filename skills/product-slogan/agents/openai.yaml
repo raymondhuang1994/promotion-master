@@ -1,0 +1,4 @@
+interface:
+  display_name: "产品定位与口号"
+  short_description: "先比较不同叙事方向，确认后精修多条口号；保留喜欢的原句，证据与创意一起检查"
+  default_prompt: "用 $product-slogan 根据附件提出三个不同叙事方向和代表句，说明取舍，等我选定后再精修。"

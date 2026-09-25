@@ -1,0 +1,18 @@
+{
+  "name": "promotion-master",
+  "version": "1.0.0",
+  "description": "Promotion Master：以研究为基础的中文产品推广，支持内部版、客户版与两版配套，涵盖核心判断、定位、问答及按需文档输出。",
+  "author": {
+    "name": "Raymond"
+  },
+  "license": "MIT",
+  "keywords": [
+    "report",
+    "etf",
+    "chinese",
+    "docx",
+    "slogan",
+    "battlecard",
+    "factcheck"
+  ]
+}
