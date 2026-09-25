@@ -2,6 +2,8 @@
 references/writing-formula.md
 references/caution-words.md
 references/direction-confirmation.md
+references/audience-editions.md
 references/persuasion-workflow.md
+references/toolkit-templates.md
 references/insight-discovery.md
 references/insight-examples.md

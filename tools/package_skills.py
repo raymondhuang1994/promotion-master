@@ -10,7 +10,8 @@ SKILLS, DIST = os.path.join(ROOT, "skills"), os.path.join(ROOT, "dist")
 EXCLUDE = {"__pycache__", "node_modules", ".DS_Store"}
 
 def frontmatter(path):
-    t = open(path, encoding="utf-8").read()
+    with open(path, encoding="utf-8") as source:
+        t = source.read()
     m = re.match(r"^---\n(.*?)\n---\n", t, re.S)
     if not m: raise ValueError("缺少 frontmatter")
     fm = dict(re.findall(r"^(\w+):\s*(.*)$", m.group(1), re.M)); return fm, t[m.end():]
@@ -40,10 +41,14 @@ def prompt_pack(skill):
         d = os.path.join(SKILLS, skill, sub)
         if os.path.isdir(d):
             for f in sorted(os.listdir(d)):
-                if f.endswith(".md"): parts.append(f"\n\n---\n\n<!-- {sub}/{f} -->\n\n" + open(os.path.join(d, f), encoding="utf-8").read())
+                if f.endswith(".md"):
+                    with open(os.path.join(d, f), encoding="utf-8") as source:
+                        parts.append(f"\n\n---\n\n<!-- {sub}/{f} -->\n\n" + source.read())
     parts.append("\n\n---\n\n说明：本文件由 tools/package_skills.py 合并生成，供不支持技能目录的宿主使用；脚本类功能（Word 渲染、QA、pptx 抽取）需要在支持代码执行的环境里用仓库中的 scripts/ 运行。")
     os.makedirs(os.path.join(DIST, "prompts"), exist_ok=True); out = os.path.join(DIST, "prompts", f"{skill}.md")
-    open(out, "w", encoding="utf-8").write("".join(parts)); return out
+    with open(out, "w", encoding="utf-8") as output:
+        output.write("".join(parts))
+    return out
 
 def main():
     r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "sync_shared.py"), "--check"], capture_output=True, text=True)

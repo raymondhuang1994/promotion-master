@@ -3,6 +3,7 @@ references/toolkit-templates.md
 references/evidence-discipline.md
 references/caution-words.md
 references/direction-confirmation.md
+references/audience-editions.md
 references/persuasion-workflow.md
 references/insight-discovery.md
 references/insight-examples.md
