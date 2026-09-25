@@ -1,0 +1,6 @@
+{
+  "name": "promotion-master-scripts",
+  "private": true,
+  "description": "中文深度报告 Word 渲染库的依赖锁定。在本目录执行 npm install 后，node build.js 无需 NODE_PATH。",
+  "dependencies": { "docx": "9.6.1" }
+}

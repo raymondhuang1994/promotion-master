@@ -1,0 +1,9 @@
+dist/
+__pycache__/
+node_modules/
+.DS_Store
+*.docx
+*.pdf
+/private/
+/evals/gold/
+/evals/replay-log.md

@@ -1,0 +1,5 @@
+# material-factcheck 从 shared/ 同步的文件
+scripts/extract_pptx.py
+scripts/quant_tools.py
+references/evidence-discipline.md
+references/caution-words.md

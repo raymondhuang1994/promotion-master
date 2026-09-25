@@ -1,0 +1,19 @@
+{
+  "name": "promotion-master",
+  "owner": {
+    "name": "Raymond"
+  },
+  "metadata": {
+    "description": "Promotion Master 产品研究与推广技能集（预览，待验收）",
+    "version": "0.1.0-preview.1"
+  },
+  "plugins": [
+    {
+      "name": "promotion-master",
+      "source": ".",
+      "description": "promotion-master 自包含主入口与 product-slogan、material-factcheck、sales-qa-battlecard、cn-docx-report 四个专项技能",
+      "version": "0.1.0-preview.1",
+      "category": "productivity"
+    }
+  ]
+}

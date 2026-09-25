@@ -1,0 +1,37 @@
+name: preview-quality
+on:
+  push:
+    branches: ["preview/quality-workflow"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install matplotlib pillow openpyxl python-pptx
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils pandoc fonts-noto-cjk libreoffice-writer
+      - name: Install recommended main skill in temporary directory
+        run: tools/install_codex.sh --dest "$RUNNER_TEMP/promotion-default"
+      - name: Install optional satellites in separate temporary directory
+        run: tools/install_codex.sh --all --dest "$RUNNER_TEMP/promotion-all"
+      - run: tools/selftest.sh --all
+      - name: Verify checks did not modify source assets
+        run: git diff --exit-code
+      - run: python3 tools/package_skills.py --prompt-pack
+      - name: Upload preview packages for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: promotion-master-preview
+          path: |
+            dist/*.skill
+            dist/prompts/*.md
+          if-no-files-found: error
+          retention-days: 14

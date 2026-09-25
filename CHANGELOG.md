@@ -1,0 +1,28 @@
+# 仓库变更记录
+
+## Promotion Master 0.1.0-preview.1（2026-09-25，待验收）
+- 从report-skills v1.3.0创建独立项目，不修改原仓库和已安装技能。
+- 主入口改名promotion-master；默认只安装自包含主技能，卫星改为显式选择。
+- 新增判断提炼与两类成熟短示范；定位先准确后传播，不固定套用案例口号。
+- 完整推广默认十二问十二答，短答直接回应，重要异议增加追问。
+- 基础正确与营销质量分开验收，不用流程/技术分数抵消核心表达缺口。
+- 新增完整成品、跨机制与资料不足测试资料；实际执行结果单列，不以此清单宣称已验证。
+- CI仅测试及提供预览包；正式Release与本机切换等待使用者确认。
+
+下列为上游历史；其中标签、版本、自动发布行为均属于原report-skills项目。
+
+## 1.3.0（2026-09-25）
+- 方向确认前移：推荐完整分析/部分模块/现稿优化，先给叙事小样与取舍，用户确认后再执行；已有明确授权不重复问。
+- 创意按需展开：先方向后句子；研究/传播/双层表达；原句 exact/spirit/reference 保留，候选与已选状态分开。
+- 新增主张卡：事实/计算到机制、产品承接、替代、反证、客户价值；同底稿按需生成研究、培训、客户待审稿。
+- 修正样例的绝对权重/相对权重混用、资本开支与 AUM 的无效推论和日期口径；语义验收取代篇幅与“惊人”数量门槛。
+- 安装与 QA：依赖按真实执行路径安装、安全独立渲染目录、错误传播、短材料及显式模块检查、自检不修改源码。
+- 回滚基线：GitHub 标签 backup/pre-marketing-upgrade-20260925（与 v1.2.0 同提交）；不重写历史。
+- 行为回放使用虚构材料；没有把真实附件或私有金标准上传。测试结论与未验证项见 docs/validation-v1.3.md。
+
+## 1.2.0（2026-09-22）
+- 首个多技能版本：exec-deep-report 1.2（编排器）；product-slogan、material-factcheck、sales-qa-battlecard、cn-docx-report 各 0.1。
+- `shared/` 为脚本与参考的唯一源，`tools/sync_shared.py --check` 保证一致。
+- `tools/package_skills.py` 产出各技能的 .skill（Claude.ai 上传用）与单文件提示包（ChatGPT 项目用）。
+- Claude Code 插件与 marketplace 清单；Codex 元数据与安装脚本；GitHub Actions 打 tag 自动发布。
+- 各技能内的变更见 `skills/promotion-master/CHANGELOG.md`。

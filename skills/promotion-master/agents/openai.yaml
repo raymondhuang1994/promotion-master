@@ -1,0 +1,5 @@
+# Codex 元数据（可选）。字段按 2026-09 Codex 文档；若 Codex 提示无法解析，删除本文件不影响技能本身。
+interface:
+  display_name: "Promotion Master"
+  short_description: "从资料提炼核心判断、一句话定位与关键问答，先确认方向，再做有证据的产品推广材料"
+  default_prompt: "用 $promotion-master 根据附件推荐范围和叙事，确认后提炼核心判断、一句话定位和关键问答。"

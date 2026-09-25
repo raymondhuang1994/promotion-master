@@ -1,0 +1,8 @@
+# sales-qa-battlecard 从 shared/ 同步的文件
+references/toolkit-templates.md
+references/evidence-discipline.md
+references/caution-words.md
+references/direction-confirmation.md
+references/persuasion-workflow.md
+references/insight-discovery.md
+references/insight-examples.md

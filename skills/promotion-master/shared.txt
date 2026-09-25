@@ -1,0 +1,27 @@
+# promotion-master 从 shared/ 同步的文件（唯一源在 shared/，改那边再运行 tools/sync_shared.py）
+references/writing-formula.md
+references/toolkit-templates.md
+references/evidence-discipline.md
+references/docx-pitfalls.md
+references/caution-words.md
+references/direction-confirmation.md
+references/persuasion-workflow.md
+references/insight-discovery.md
+references/insight-examples.md
+references/report-json.md
+scripts/report_lib.js
+scripts/build.js
+scripts/build_template.js
+scripts/chart_style.py
+scripts/quant_tools.py
+scripts/extract_pptx.py
+scripts/render_qa.py
+scripts/text_qa.py
+scripts/structure_qa.py
+scripts/doctor.py
+scripts/make_datasheet.py
+scripts/package.json
+examples/README.md
+examples/make_figures.py
+examples/polaris-mini.json
+examples/fig_weights.png

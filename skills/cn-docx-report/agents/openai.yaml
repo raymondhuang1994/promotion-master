@@ -1,0 +1,4 @@
+interface:
+  display_name: "中文 Word 报告排版"
+  short_description: "report.json 一次渲染成版式稳定的中文 Word，结构、文字、版式三道 QA"
+  default_prompt: "用 $cn-docx-report 把这份内容排成 Word，完成结构、文字与目视检查后交付。"

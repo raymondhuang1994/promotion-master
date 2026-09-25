@@ -1,0 +1,17 @@
+{
+  "name": "promotion-master",
+  "version": "0.1.0-preview.1",
+  "description": "Promotion Master 预览版：以研究为基础的中文产品推广，含核心判断、一句话定位、十二问十二答及四个专项技能。待使用者验收。",
+  "author": {
+    "name": "Raymond"
+  },
+  "keywords": [
+    "report",
+    "etf",
+    "chinese",
+    "docx",
+    "slogan",
+    "battlecard",
+    "factcheck"
+  ]
+}

@@ -1,0 +1,18 @@
+# cn-docx-report 从 shared/ 同步的文件
+references/docx-pitfalls.md
+references/report-json.md
+scripts/report_lib.js
+scripts/build.js
+scripts/build_template.js
+scripts/chart_style.py
+scripts/quant_tools.py
+scripts/render_qa.py
+scripts/text_qa.py
+scripts/structure_qa.py
+scripts/doctor.py
+scripts/make_datasheet.py
+scripts/package.json
+examples/README.md
+examples/make_figures.py
+examples/polaris-mini.json
+examples/fig_weights.png
