@@ -1,10 +1,11 @@
 {
   "name": "promotion-master",
-  "version": "0.1.0-preview.2",
-  "description": "Promotion Master 预览版：以研究为基础的中文产品推广，含核心判断、一句话定位、十二问十二答及四个专项技能。待使用者验收。",
+  "version": "1.0.0",
+  "description": "Promotion Master：以研究为基础的中文产品推广，支持内部版、客户版与两版配套，涵盖核心判断、定位、问答及按需文档输出。",
   "author": {
     "name": "Raymond"
   },
+  "license": "MIT",
   "keywords": [
     "report",
     "etf",

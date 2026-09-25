@@ -1,7 +1,8 @@
-name: preview-quality
+name: quality-and-release
 on:
   push:
-    branches: ["preview/quality-workflow"]
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -13,25 +14,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install matplotlib pillow openpyxl python-pptx
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils pandoc fonts-noto-cjk libreoffice-writer
-      - name: Install recommended main skill in temporary directory
-        run: tools/install_codex.sh --dest "$RUNNER_TEMP/promotion-default"
-      - name: Install optional satellites in separate temporary directory
-        run: tools/install_codex.sh --all --dest "$RUNNER_TEMP/promotion-all"
-      - run: tools/selftest.sh --all
+      - name: Install text-only main skill in isolation
+        run: bash tools/install_codex.sh --dest "$RUNNER_TEMP/promotion-text"
+      - name: Prepare optional Word tools in isolation
+        run: bash tools/install_codex.sh --all --with-word --dest "$RUNNER_TEMP/promotion-word"
+      - run: bash tools/selftest.sh --all
       - name: Verify checks did not modify source assets
         run: git diff --exit-code
       - run: python3 tools/package_skills.py --prompt-pack
-      - name: Upload preview packages for review
+      - name: Upload tested packages
         uses: actions/upload-artifact@v4
         with:
-          name: promotion-master-preview
-          path: |
-            dist/*.skill
-            dist/prompts/*.md
+          name: promotion-master-packages
+          path: dist/release/*
           if-no-files-found: error
           retention-days: 14
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches project version
+        run: test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+      - uses: actions/download-artifact@v4
+        with:
+          name: promotion-master-packages
+          path: dist
+      - name: Check downloaded artifacts
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS
+      - name: Publish the verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.skill dist/*.zip dist/*-prompt.md dist/SHA256SUMS \
+            --verify-tag --title "Promotion Master $GITHUB_REF_NAME" --notes-file docs/release-notes.md

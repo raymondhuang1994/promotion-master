@@ -23,7 +23,7 @@ RESOURCE_PATH = re.compile(
 )
 FORBIDDEN_PARTS = {
     "node_modules", "__pycache__", ".ds_store", ".git", ".env",
-    "private", ".private", "evals", "gold", "replay-log.md",
+    "private", ".private", "docs", "evals", "gold", "replay-log.md", "work", ".venv",
 }
 
 
@@ -124,6 +124,7 @@ class AudiencePackagingTests(unittest.TestCase):
                     self.assertFalse(path.is_absolute(), name)
                     self.assertNotIn("..", path.parts, name)
                     self.assertEqual(path.parts[0], skill, name)
+                    self.assertNotIn(path.suffix.lower(), {".docx", ".pdf", ".pptx", ".xlsx"}, name)
                     for part in path.parts:
                         self.assertNotIn(part.lower(), FORBIDDEN_PARTS, name)
                         self.assertFalse(part.lower().startswith(".env."), name)
@@ -132,6 +133,25 @@ class AudiencePackagingTests(unittest.TestCase):
                         source.resolve().relative_to(base)
                     except ValueError:
                         self.fail(f"Archive included a source outside its skill: {name}")
+
+    def test_real_packages_include_license_and_current_host_metadata(self):
+        for skill in SKILLS:
+            with self.subTest(skill=skill), zipfile.ZipFile(self.archives[skill]) as archive:
+                for relative in ("LICENSE", "agents/openai.yaml"):
+                    expected = (ROOT / "skills" / skill / relative).read_bytes()
+                    self.assertTrue(expected.strip(), relative)
+                    self.assertEqual(archive.read(f"{skill}/{relative}"), expected)
+
+    def test_prompt_pack_recursively_preserves_real_workspace_templates(self):
+        skill = "promotion-master"
+        prompt = self.prompts[skill].read_text(encoding="utf-8")
+        templates = list((ROOT / "skills" / skill / "assets/workspace").rglob("*.md"))
+        self.assertGreater(len(templates), 1)
+        for source in templates:
+            relative = source.relative_to(ROOT / "skills" / skill).as_posix()
+            with self.subTest(template=relative):
+                self.assertIn(f"<!-- {relative} -->", prompt)
+                self.assertIn(source.read_text(encoding="utf-8"), prompt)
 
 
 if __name__ == "__main__":

@@ -50,4 +50,4 @@ promotion-master 的阶段 5 到 6 直接调用本技能的脚本；material-fac
 | `scripts/` | 见上方命令；`build_template.js` 是直接调用渲染库的最小示例 |
 | `examples/` | 看效果、跑测试 |
 
-版本 0.1.0-preview.2（2026-09-25）。脚本、样例及共享参考改 shared/ 后同步。
+版本 1.0.0（2026-09-25）。脚本、样例及共享参考改 shared/ 后同步。

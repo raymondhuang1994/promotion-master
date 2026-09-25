@@ -267,29 +267,55 @@ class InstallTests(unittest.TestCase):
         for directory in ["shared/scripts", "skills/promotion-master/scripts", "skills/cn-docx-report/scripts"]:
             (self.repo / directory / "package.json").write_text("{}")
             (self.repo / directory / "build.js").write_text("// fixture\n")
-        (self.repo / "shared/scripts/doctor.py").write_text("import os\nassert 'NODE_PATH' not in os.environ\nraise SystemExit(11 if os.environ.get('INSTALL_TEST_DOCTOR_FAIL') else 0)\n")
+        (self.repo / "shared/scripts/doctor.py").write_text("import json,os\nassert 'NODE_PATH' not in os.environ\nwith open(os.environ['INSTALL_TEST_LOG'],'a') as f: f.write(json.dumps({'tool':'doctor','node_path':os.environ.get('NODE_PATH')})+'\\n')\nraise SystemExit(11 if os.environ.get('INSTALL_TEST_DOCTOR_FAIL') else 0)\n")
         self.bin = self.base / "bin"
         self.bin.mkdir()
+        self.bash = shutil.which("bash")
+        # Isolate PATH so a host Node/Word installation cannot mask missing tools.
+        for name in ["dirname", "basename", "mkdir", "ln", "readlink", "env"]:
+            (self.bin / name).symlink_to(shutil.which(name))
+        (self.bin / "python3").symlink_to(sys.executable)
         for name in ["npm", "node"]:
             executable = self.bin / name
-            executable.write_text("#!" + sys.executable + "\nimport json,os,sys\nfrom pathlib import Path\nwith open(os.environ['INSTALL_TEST_LOG'],'a') as f: f.write(json.dumps({'tool':Path(sys.argv[0]).name,'args':sys.argv[1:],'node_path':os.environ.get('NODE_PATH')})+'\\n')\nraise SystemExit(7 if os.environ.get('INSTALL_TEST_FAIL') == Path(sys.argv[0]).name else 0)\n")
+            executable.write_text("#!" + sys.executable + "\nimport json,os,sys\nfrom pathlib import Path\ntool=Path(sys.argv[0]).name\nargs=sys.argv[1:]\nwith open(os.environ['INSTALL_TEST_LOG'],'a') as f: f.write(json.dumps({'tool':tool,'args':args,'node_path':os.environ.get('NODE_PATH')})+'\\n')\ntarget=args[args.index('--prefix')+1] if '--prefix' in args else args[-1]\nfail=os.environ.get('INSTALL_TEST_FAIL') == tool and (not os.environ.get('INSTALL_TEST_FAIL_TARGET') or os.environ['INSTALL_TEST_FAIL_TARGET'] == target)\nraise SystemExit(7 if fail else 0)\n")
             executable.chmod(0o755)
-        self.dest = self.base / "installed"
-        self.env = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ["PATH"], INSTALL_TEST_LOG=str(self.base / "commands.log"), NODE_PATH="/unrelated/global/node_modules")
+        self.dest = self.base / "installed skills"
+        self.env = dict(os.environ, PATH=str(self.bin), INSTALL_TEST_LOG=str(self.base / "commands.log"), NODE_PATH="/unrelated/global/node_modules")
 
-    def run_install(self, *options):
-        return subprocess.run(["bash", str(self.repo / "tools/install_codex.sh"), *options, str(self.dest)], env=self.env, text=True, capture_output=True)
+    def run_install(self, *options, explicit_destination=False):
+        args = list(options)
+        if not explicit_destination:
+            args.append(str(self.dest))
+        return subprocess.run([self.bash, str(self.repo / "tools/install_codex.sh"), *args], env=self.env, text=True, capture_output=True)
 
-    def test_install_is_idempotent_and_installs_each_entry(self):
+    def command_records(self):
+        log = self.base / "commands.log"
+        return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+
+    def test_text_all_is_idempotent_without_node_or_word(self):
+        for name in ["npm", "node"]:
+            (self.bin / name).unlink()
+        self.env["INSTALL_TEST_DOCTOR_FAIL"] = "1"
         for _ in range(2):
             result = self.run_install("--all")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(len(list(self.dest.iterdir())), 5)
         self.assertEqual((self.dest / "promotion-master").resolve(), (self.repo / "skills/promotion-master").resolve())
-        log = (self.base / "commands.log").read_text()
-        self.assertIn(str(self.repo / "shared/scripts"), log)
-        self.assertIn(str(self.repo / "skills/promotion-master/scripts"), log)
-        self.assertIn(str(self.repo / "skills/cn-docx-report/scripts"), log)
+        self.assertEqual(self.command_records(), [])
+
+    def test_with_word_all_combines_options_and_is_idempotent(self):
+        for args in [("--with-word", "--all", "--dest", str(self.dest)),
+                     ("--dest", str(self.dest), "--all", "--with-word")]:
+            result = self.run_install(*args, explicit_destination=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(len(list(self.dest.iterdir())), 5)
+        records = self.command_records()
+        targets = [record["args"][record["args"].index("--prefix") + 1]
+                   for record in records if record["tool"] == "npm"]
+        expected = [str((self.repo / directory).resolve()) for directory in
+                    ["shared/scripts", "skills/promotion-master/scripts", "skills/cn-docx-report/scripts"]]
+        self.assertCountEqual(targets, expected * 2)
+        self.assertTrue(all(record["node_path"] is None for record in records))
 
     def test_existing_directory_or_unrelated_link_is_preserved(self):
         self.dest.mkdir()
@@ -297,77 +323,144 @@ class InstallTests(unittest.TestCase):
         target.mkdir()
         sentinel = target / "mine.txt"
         sentinel.write_text("keep")
-        self.assertNotEqual(self.run_install("--all").returncode, 0)
+        for options in [("--all",), ("--all", "--with-word")]:
+            self.assertNotEqual(self.run_install(*options).returncode, 0)
         self.assertEqual(sentinel.read_text(), "keep")
         self.assertFalse((self.dest / "promotion-master").exists())
-        target.rename(self.base / "old-satellite")
-        target.symlink_to(self.base / "old-satellite")
-        self.assertNotEqual(self.run_install("--all").returncode, 0)
-        self.assertEqual(target.resolve(), (self.base / "old-satellite").resolve())
+        target.rename(self.base / "generic-other-skill")
+        target.symlink_to(self.base / "generic-other-skill")
+        for options in [("--all",), ("--all", "--with-word")]:
+            self.assertNotEqual(self.run_install(*options).returncode, 0)
+        self.assertEqual(target.resolve(), (self.base / "generic-other-skill").resolve())
+        self.assertEqual(self.command_records(), [])
 
     def test_failed_dependency_install_does_not_claim_completion(self):
         self.env["INSTALL_TEST_FAIL"] = "npm"
-        result = self.run_install()
+        result = self.run_install("--with-word")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("完成：", result.stdout)
         self.assertFalse(self.dest.exists())
 
-    def test_default_installs_only_main_and_its_dependencies(self):
+    def test_default_installs_only_main_without_node_or_word(self):
+        for name in ["npm", "node"]:
+            (self.bin / name).unlink()
+        self.env["INSTALL_TEST_DOCTOR_FAIL"] = "1"
         for _ in range(2):
             result = self.run_install("--dest")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual([p.name for p in self.dest.iterdir()], ["promotion-master"])
-        records = [json.loads(line) for line in (self.base / "commands.log").read_text().splitlines()]
+        self.assertEqual(self.command_records(), [])
+        self.assertIn("文本模式", result.stdout)
+        self.assertNotIn("Word 工具链预检完成", result.stdout)
+
+    def test_with_word_prepares_only_selected_local_dependencies(self):
+        result = self.run_install("--with-word")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual([p.name for p in self.dest.iterdir()], ["promotion-master"])
+        records = self.command_records()
         self.assertTrue(all(record["node_path"] is None for record in records))
         npm_targets = {record["args"][record["args"].index("--prefix") + 1] for record in records if record["tool"] == "npm"}
         self.assertEqual(npm_targets, {str((self.repo / "shared/scripts").resolve()), str((self.repo / "skills/promotion-master/scripts").resolve())})
         node_entries = {record["args"][-1] for record in records if record["tool"] == "node"}
         self.assertEqual(node_entries, npm_targets)
-        self.assertFalse((self.dest / "exec-deep-report").exists())
+        self.assertEqual(sum(record["tool"] == "doctor" for record in records), 1)
 
-    def test_default_preserves_old_installation_and_all_reports_conflicts(self):
+    def test_default_preserves_other_skills_and_all_reports_conflicts(self):
         self.dest.mkdir()
-        old_names = ["exec-deep-report", "cn-docx-report", "product-slogan", "material-factcheck", "sales-qa-battlecard"]
-        old = self.base / "old-report-skills"
-        for name in old_names:
-            source = old / name
+        other_names = ["generic-other-skill", "cn-docx-report", "product-slogan", "material-factcheck", "sales-qa-battlecard"]
+        other = self.base / "independent-project"
+        for name in other_names:
+            source = other / name
             source.mkdir(parents=True)
-            (source / "keep.txt").write_text("old content")
+            (source / "keep.txt").write_text("existing content")
             (self.dest / name).symlink_to(source)
-        before = {name: os.readlink(self.dest / name) for name in old_names}
+        before = {name: os.readlink(self.dest / name) for name in other_names}
         result = self.run_install()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(before, {name: os.readlink(self.dest / name) for name in old_names})
-        self.assertTrue(all((self.dest / name / "keep.txt").read_text() == "old content" for name in old_names))
-        log_before = (self.base / "commands.log").read_text()
-        result = self.run_install("--all")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("安装冲突", result.stderr)
-        self.assertIn("--dest", result.stderr)
-        self.assertEqual(before, {name: os.readlink(self.dest / name) for name in old_names})
-        self.assertEqual(log_before, (self.base / "commands.log").read_text())
+        self.assertEqual(before, {name: os.readlink(self.dest / name) for name in other_names})
+        self.assertTrue(all((self.dest / name / "keep.txt").read_text() == "existing content" for name in other_names))
+        for options in [("--all",), ("--all", "--with-word")]:
+            result = self.run_install(*options)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("安装冲突", result.stderr)
+            self.assertIn("--dest", result.stderr)
+        self.assertEqual(before, {name: os.readlink(self.dest / name) for name in other_names})
+        self.assertEqual(self.command_records(), [])
 
     def test_missing_system_dependency_does_not_claim_success_or_link(self):
         self.env["INSTALL_TEST_DOCTOR_FAIL"] = "1"
-        result = self.run_install()
+        result = self.run_install("--with-word")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("完成：", result.stdout)
         self.assertFalse(self.dest.exists())
 
     def test_local_node_resolution_failure_is_not_hidden(self):
         self.env["INSTALL_TEST_FAIL"] = "node"
-        result = self.run_install()
+        result = self.run_install("--with-word")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("完成：", result.stdout)
         self.assertFalse(self.dest.exists())
+
+    def test_with_word_requires_node_and_npm_before_creating_links(self):
+        for name in ["node", "npm"]:
+            with self.subTest(missing=name):
+                executable = self.bin / name
+                hidden = self.base / (name + "-hidden")
+                executable.rename(hidden)
+                result = self.run_install("--with-word")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(name, result.stderr)
+                self.assertFalse(self.dest.exists())
+                self.assertEqual(self.command_records(), [])
+                hidden.rename(executable)
+
+    def test_late_word_validation_failure_preserves_existing_link_without_partial_install(self):
+        self.dest.mkdir()
+        main = self.dest / "promotion-master"
+        main.symlink_to(self.repo / "skills/promotion-master")
+        original = os.readlink(main)
+        self.env["INSTALL_TEST_FAIL"] = "node"
+        self.env["INSTALL_TEST_FAIL_TARGET"] = str((self.repo / "skills/promotion-master/scripts").resolve())
+        result = self.run_install("--all", "--with-word")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("完成：", result.stdout)
+        self.assertEqual([p.name for p in self.dest.iterdir()], ["promotion-master"])
+        self.assertEqual(os.readlink(main), original)
+        node_calls = [record for record in self.command_records() if record["tool"] == "node"]
+        self.assertEqual(len(node_calls), 3)
+        self.assertEqual(node_calls[-1]["args"][-1], self.env["INSTALL_TEST_FAIL_TARGET"])
+
+    def test_text_install_can_prepare_word_later_without_changing_link(self):
+        self.assertEqual(self.run_install().returncode, 0)
+        main = self.dest / "promotion-master"
+        original = os.readlink(main)
+        result = self.run_install("--with-word")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(os.readlink(main), original)
+        self.assertTrue(any(record["tool"] == "doctor" for record in self.command_records()))
+
+    def test_broken_or_other_main_link_is_never_overwritten(self):
+        self.dest.mkdir()
+        target = self.dest / "promotion-master"
+        other = self.base / "generic-other-skill"
+        target.symlink_to(other)
+        for exists in [False, True]:
+            if exists:
+                other.mkdir()
+            for options in [(), ("--with-word",)]:
+                result = self.run_install(*options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(os.readlink(target), str(other))
+                self.assertEqual(self.command_records(), [])
 
     def test_help_and_invalid_options_do_not_install(self):
         result = self.run_install("--help")
         self.assertEqual(result.returncode, 0)
         self.assertIn("--all", result.stdout)
+        self.assertIn("--with-word", result.stdout)
         self.assertFalse(self.dest.exists())
         self.assertFalse((self.base / "commands.log").exists())
-        for options in [("--unknown",), ("--dest", "one", "--dest")]:
+        for options in [("--unknown",), ("--dest", "one", "--dest"), ("--dest", "--with-word")]:
             with self.subTest(options=options):
                 result = self.run_install(*options)
                 self.assertEqual(result.returncode, 2)

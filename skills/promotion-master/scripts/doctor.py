@@ -26,7 +26,7 @@ add("node", bool(major) and int(major.group(1)) >= 18, ver, "安装 Node.js 18 �
 env = dict(os.environ)
 # 与 build.js 使用同一目录及当前环境；不偷偷添加只在预检时有效的全局 NODE_PATH。
 r = run(["node", "-e", "const fs=require('fs'),path=require('path');let d=path.dirname(require.resolve('docx'));for(;;){const p=path.join(d,'package.json');if(fs.existsSync(p)){const v=JSON.parse(fs.readFileSync(p,'utf8'));if(v.name==='docx'){console.log(v.version);break;}}const next=path.dirname(d);if(next===d)throw Error('docx package metadata not found');d=next;}"], cwd=HERE, env=env)
-add("docx (npm)", bool(r) and r.returncode == 0, "docx " + (r.stdout.strip() if r else ""), "在此技能安装依赖：npm install --prefix " + shlex.quote(HERE) + "（仓库用户可运行 tools/install_codex.sh）")
+add("docx (npm)", bool(r) and r.returncode == 0, "docx " + (r.stdout.strip() if r else ""), "在此技能安装依赖：npm install --prefix " + shlex.quote(HERE) + "（仓库用户可运行 tools/install_codex.sh --with-word）")
 
 # Python 库
 for mod, hint, req in [("matplotlib", "pip install matplotlib", True), ("PIL", "pip install pillow", True), ("openpyxl", "pip install openpyxl（生成 Excel 取数单用）", False)]:
