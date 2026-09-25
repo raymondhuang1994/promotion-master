@@ -91,4 +91,4 @@ python3 tools/package_skills.py --prompt-pack
 - 真实附件、客户资料、私有金标准不上传。公开示范与输入全部虚构。
 - 新仓库Git提交使用隐藏邮箱。不得加入凭据或绝对本机路径。
 
-正式发布前会提供本轮验证记录及可审阅的完整测试成品；未完成项如实列出。
+本轮 [验证记录](docs/validation-preview.md) 和 [测试成品及对比](docs/review/README.md) 随预览维护；未完成项如实列出。
